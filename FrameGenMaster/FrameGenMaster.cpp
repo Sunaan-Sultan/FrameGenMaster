@@ -44,7 +44,6 @@ int main() {
     if (SUCCEEDED(hr)) {
         std::cout << "[SUCCESS] Direct3D 11 Device created successfully!" << std::endl;
 
-        // --- DEBUG: Print the name of the GPU currently being used ---
         IDXGIDevice* pDXGIDevice = nullptr;
         if (SUCCEEDED(d3dDevice->QueryInterface(__uuidof(IDXGIDevice), (void**)&pDXGIDevice))) {
             IDXGIAdapter* pDXGIAdapter = nullptr;
@@ -89,6 +88,9 @@ int main() {
                             // ==========================================
                             std::cout << "\nStarting frame capture and CUDA mapping loop..." << std::endl;
 
+                            // We will create this texture once and reuse it for all frames
+                            ID3D11Texture2D* cudaFriendlyTexture = nullptr;
+
                             for (int i = 1; i <= 10; ++i) {
                                 IDXGIResource* desktopResource = nullptr;
                                 DXGI_OUTDUPL_FRAME_INFO frameInfo;
@@ -111,38 +113,53 @@ int main() {
                                     D3D11_TEXTURE2D_DESC desc;
                                     acquiredTexture->GetDesc(&desc);
 
-                                    // ==========================================
-                                    // 5. Map DirectX Texture to CUDA Memory (Zero-Copy)
-                                    // ==========================================
+                                    // -------------------------------------------------------------
+                                    // STEP A: Create a clean intermediate texture (Only done once)
+                                    // -------------------------------------------------------------
+                                    if (cudaFriendlyTexture == nullptr) {
+                                        D3D11_TEXTURE2D_DESC texDesc = desc;
+                                        texDesc.Usage = D3D11_USAGE_DEFAULT;
+                                        texDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET;
+                                        texDesc.CPUAccessFlags = 0;
+                                        texDesc.MiscFlags = 0; // Strip away Windows OS locks/GDI flags
+
+                                        d3dDevice->CreateTexture2D(&texDesc, nullptr, &cudaFriendlyTexture);
+                                        std::cout << "-> [INIT] Created CUDA-friendly intermediate texture ("
+                                            << desc.Width << "x" << desc.Height << ")\n";
+                                    }
+
+                                    // -------------------------------------------------------------
+                                    // STEP B: Extremely fast VRAM-to-VRAM copy
+                                    // -------------------------------------------------------------
+                                    d3dContext->CopyResource(cudaFriendlyTexture, acquiredTexture);
+
+                                    // -------------------------------------------------------------
+                                    // STEP C: Map the clean texture to CUDA
+                                    // -------------------------------------------------------------
                                     cudaGraphicsResource* cudaResource = nullptr;
                                     cudaError_t cudaStatus;
 
-                                    // Register the DirectX texture with CUDA
-                                    cudaStatus = cudaGraphicsD3D11RegisterResource(&cudaResource, acquiredTexture, cudaGraphicsRegisterFlagsNone);
+                                    // Notice we are registering cudaFriendlyTexture now, NOT acquiredTexture
+                                    cudaStatus = cudaGraphicsD3D11RegisterResource(&cudaResource, cudaFriendlyTexture, cudaGraphicsRegisterFlagsNone);
 
                                     if (cudaStatus == cudaSuccess) {
-                                        // Map the resource to give CUDA access
                                         cudaStatus = cudaGraphicsMapResources(1, &cudaResource, 0);
 
                                         if (cudaStatus == cudaSuccess) {
                                             cudaArray* cuArray = nullptr;
-                                            // Get the CUDA array pointer (This is what TensorRT will use!)
                                             cudaGraphicsSubResourceGetMappedArray(&cuArray, cudaResource, 0, 0);
 
-                                            std::cout << "Frame " << i << ": Captured (" << desc.Width << "x" << desc.Height
-                                                << ") & Successfully mapped to CUDA Memory!" << std::endl;
+                                            std::cout << "Frame " << i << ": Successfully mapped to CUDA Memory!" << std::endl;
 
-                                            // Unmap resource after we are done
                                             cudaGraphicsUnmapResources(1, &cudaResource, 0);
                                         }
                                         else {
                                             std::cout << "Frame " << i << ": Failed to map CUDA resource." << std::endl;
                                         }
-                                        // Unregister resource
                                         cudaGraphicsUnregisterResource(cudaResource);
                                     }
                                     else {
-                                        std::cout << "Frame " << i << ": Failed to register DirectX texture to CUDA." << std::endl;
+                                        std::cout << "Frame " << i << ": Failed to register DirectX texture to CUDA. Error Code: " << cudaStatus << std::endl;
                                     }
 
                                     acquiredTexture->Release();
@@ -150,6 +167,11 @@ int main() {
 
                                 desktopResource->Release();
                                 desktopDuplication->ReleaseFrame();
+                            }
+
+                            // Free our intermediate texture
+                            if (cudaFriendlyTexture) {
+                                cudaFriendlyTexture->Release();
                             }
 
                             desktopDuplication->Release();
@@ -164,7 +186,7 @@ int main() {
         }
 
         // ==========================================
-        // 6. Global Memory Cleanup
+        // 5. Global Memory Cleanup
         // ==========================================
         d3dContext->Release();
         d3dDevice->Release();
