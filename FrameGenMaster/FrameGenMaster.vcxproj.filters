@@ -15,8 +15,8 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="FrameGenMaster.cpp">
+    <CudaCompile Include="FrameGenMaster.cu">
       <Filter>Source Files</Filter>
-    </ClCompile>
+    </CudaCompile>
   </ItemGroup>
 </Project>
