@@ -1,9 +1,11 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
-VisualStudioVersion = 17.14.37012.4 d17.14
+VisualStudioVersion = 17.14.37012.4
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "FrameGenMaster", "FrameGenMaster\FrameGenMaster.vcxproj", "{0196349E-9E8C-4110-9427-FDA6C3847535}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "FrameGenHook", "FrameGenHook\FrameGenHook.vcxproj", "{2D1C334C-CB69-4241-8BF4-9424CA6613F3}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,6 +23,14 @@ Global
 		{0196349E-9E8C-4110-9427-FDA6C3847535}.Release|x64.Build.0 = Release|x64
 		{0196349E-9E8C-4110-9427-FDA6C3847535}.Release|x86.ActiveCfg = Release|Win32
 		{0196349E-9E8C-4110-9427-FDA6C3847535}.Release|x86.Build.0 = Release|Win32
+		{2D1C334C-CB69-4241-8BF4-9424CA6613F3}.Debug|x64.ActiveCfg = Debug|x64
+		{2D1C334C-CB69-4241-8BF4-9424CA6613F3}.Debug|x64.Build.0 = Debug|x64
+		{2D1C334C-CB69-4241-8BF4-9424CA6613F3}.Debug|x86.ActiveCfg = Debug|Win32
+		{2D1C334C-CB69-4241-8BF4-9424CA6613F3}.Debug|x86.Build.0 = Debug|Win32
+		{2D1C334C-CB69-4241-8BF4-9424CA6613F3}.Release|x64.ActiveCfg = Release|x64
+		{2D1C334C-CB69-4241-8BF4-9424CA6613F3}.Release|x64.Build.0 = Release|x64
+		{2D1C334C-CB69-4241-8BF4-9424CA6613F3}.Release|x86.ActiveCfg = Release|Win32
+		{2D1C334C-CB69-4241-8BF4-9424CA6613F3}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
